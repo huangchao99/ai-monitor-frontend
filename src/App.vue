@@ -4,7 +4,7 @@
     <el-aside width="220px" style="background:#001529">
       <div class="logo">
         <el-icon size="22" color="#1890ff"><VideoCamera /></el-icon>
-        <span>AI 智能监控</span>
+        <span>HiFleet 智能监控</span>
       </div>
       <el-menu
         :default-active="activeMenu"
