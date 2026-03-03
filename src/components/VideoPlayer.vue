@@ -55,7 +55,7 @@ function init() {
   }
 
   player = mpegts.createPlayer(
-    { type: 'flv', url: props.url, isLive: true },
+    { type: 'flv', url: props.url, isLive: true, hasAudio: false },
     {
       enableWorker: true,
       lazyLoad: false,
@@ -68,8 +68,8 @@ function init() {
   player.attachMediaElement(videoEl.value)
   player.load()
 
-  player.on(mpegts.Events.ERROR, (_, detail) => {
-    error.value = `播放错误: ${detail}`
+  player.on(mpegts.Events.ERROR, (_, errorDetail) => {
+    error.value = `播放错误: ${errorDetail}`
     loading.value = false
   })
 
@@ -78,7 +78,6 @@ function init() {
   })
 
   player.play().catch(() => {
-    /* autoplay may be blocked, user can manually start */
     loading.value = false
   })
 }
