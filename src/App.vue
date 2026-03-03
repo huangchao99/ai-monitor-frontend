@@ -13,6 +13,10 @@
         active-text-color="#ffffff"
         router
       >
+        <el-menu-item index="/dashboard">
+          <el-icon><Monitor /></el-icon>
+          <span>控制台</span>
+        </el-menu-item>
         <el-menu-item index="/cameras">
           <el-icon><VideoCamera /></el-icon>
           <span>摄像头管理</span>
@@ -54,6 +58,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { Monitor } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
