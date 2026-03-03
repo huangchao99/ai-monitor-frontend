@@ -7,20 +7,22 @@
           <el-icon style="color:#1890ff;margin-right:6px"><Monitor /></el-icon>任务预览
         </span>
         <div class="layout-toggle">
-          <el-tooltip content="单画面" placement="top">
-            <button class="layout-btn" :class="{ active: layout === 1 }" @click="setLayout(1)">
-              <el-icon><FullScreen /></el-icon>
-            </button>
+          <el-tooltip content="单画面 1×1" placement="top">
+            <button class="layout-btn" :class="{ active: layout === 1 }" @click="setLayout(1)">1</button>
           </el-tooltip>
-          <el-tooltip content="四画面" placement="top">
-            <button class="layout-btn" :class="{ active: layout === 4 }" @click="setLayout(4)">
-              <el-icon><Grid /></el-icon>
-            </button>
+          <el-tooltip content="四画面 2×2" placement="top">
+            <button class="layout-btn" :class="{ active: layout === 4 }" @click="setLayout(4)">4</button>
+          </el-tooltip>
+          <el-tooltip content="六画面 3×2" placement="top">
+            <button class="layout-btn" :class="{ active: layout === 6 }" @click="setLayout(6)">6</button>
+          </el-tooltip>
+          <el-tooltip content="九画面 3×3" placement="top">
+            <button class="layout-btn" :class="{ active: layout === 9 }" @click="setLayout(9)">9</button>
           </el-tooltip>
         </div>
       </div>
 
-      <div class="video-grid" :class="layout === 1 ? 'grid-1' : 'grid-4'">
+      <div class="video-grid" :class="`grid-${layout}`">
         <div v-for="i in layout" :key="i" class="video-slot">
           <div class="video-slot__bar">
             <el-select
@@ -152,7 +154,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
-  Monitor, FullScreen, Grid, VideoCamera, Bell, Warning, Refresh,
+  Monitor, VideoCamera, Bell, Warning, Refresh,
   AlarmClock, Picture, Clock, Location,
 } from '@element-plus/icons-vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
@@ -161,7 +163,7 @@ import { alarmApi } from '@/api/alarm'
 
 // ── Video grid state ──
 const layout = ref(4)
-const selectedTasks = ref([null, null, null, null])
+const selectedTasks = ref(Array(9).fill(null))
 const allTasks = ref([])
 
 const runningTasks = computed(() => allTasks.value.filter(t => t.status === 1))
@@ -353,6 +355,16 @@ onUnmounted(() => {
 .grid-4 {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
+}
+
+.grid-6 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 1fr 1fr;
+}
+
+.grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
 }
 
 /* ── Video slot ── */
