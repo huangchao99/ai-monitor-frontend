@@ -248,7 +248,7 @@ onMounted(() => {
   refreshTimer = setInterval(() => {
     fetchTasks()
     refreshAlarms()
-  }, 30000)
+  }, 60000)
 })
 
 onUnmounted(() => {
