@@ -2,7 +2,7 @@
 
 > AI 智能视频监控系统 — Vue3 前端管理界面
 
-提供摄像头管理、监控任务配置、事件告警查看三大功能模块，通过 REST API 与 Go 后端通信，通过 mpegts.js 直接播放 ZLMediaKit 提供的 HTTP-FLV 直播流。
+提供控制台总览、摄像头管理、监控任务配置、事件告警查看四大功能模块，通过 REST API 与 Go 后端通信，通过 mpegts.js 直接播放 ZLMediaKit 提供的 HTTP-FLV 直播流。
 
 ---
 
@@ -40,6 +40,7 @@ ai-monitor-frontend/
     ├── stores/           # Pinia 状态管理
     ├── api/              # axios 封装的后端 API 调用
     └── views/
+        ├── Dashboard.vue # 控制台总览页
         ├── Cameras.vue   # 摄像头管理页
         ├── Tasks.vue     # 任务管理页
         └── Alarms.vue    # 事件告警页
@@ -48,6 +49,17 @@ ai-monitor-frontend/
 ---
 
 ## 功能页面
+
+### 控制台（`Dashboard.vue`）
+
+- 左侧**任务预览**面板：支持 1×1、2×2、3×2、3×3 四种画面布局切换
+- 每个画面格可独立选择运行中的任务进行直播预览（HTTP-FLV）
+- 底部显示摄像头名称，未选择时展示占位提示
+- 右侧**实时告警**面板：
+  - 顶部实时时钟
+  - 统计卡片：今日告警数量 / 累计告警总数
+  - 滚动列表展示最近 20 条告警（缩略图快照 + 算法名 + 摄像头 + 时间 + 处理状态）
+- 每 30 秒自动刷新任务列表和告警数据
 
 ### 摄像头管理（`Cameras.vue`）
 
