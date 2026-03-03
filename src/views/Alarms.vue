@@ -3,18 +3,28 @@
     <!-- Filter bar -->
     <el-card shadow="never" style="margin-bottom:16px">
       <el-row :gutter="12" align="middle">
-        <el-col :span="6">
+        <el-col :span="5">
           <el-select v-model="filter.task_id" clearable placeholder="按任务筛选" style="width:100%">
             <el-option v-for="t in tasks" :key="t.id" :label="t.task_name" :value="t.id" />
           </el-select>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
+          <el-select v-model="filter.algo_name" clearable placeholder="按算法筛选" style="width:100%">
+            <el-option
+              v-for="a in algorithms"
+              :key="a.algo_key"
+              :label="a.algo_name"
+              :value="a.algo_name"
+            />
+          </el-select>
+        </el-col>
+        <el-col :span="4">
           <el-select v-model="filter.status" clearable placeholder="按状态筛选" style="width:100%">
             <el-option label="未处理" :value="0" />
             <el-option label="已处理" :value="1" />
           </el-select>
         </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <el-date-picker
             v-model="filter.dateRange"
             type="daterange"
@@ -115,6 +125,7 @@ import { taskApi } from '@/api/task'
 const route = useRoute()
 const alarms = ref([])
 const tasks = ref([])
+const algorithms = ref([])
 const loading = ref(false)
 const handling = reactive({})
 const total = ref(0)
@@ -123,6 +134,7 @@ const pageSize = ref(20)
 
 const filter = reactive({
   task_id: null,
+  algo_name: null,
   status: null,
   dateRange: null,
 })
@@ -141,6 +153,7 @@ async function fetchAlarms(p) {
   loading.value = true
   const params = { page: page.value, size: pageSize.value }
   if (filter.task_id) params.task_id = filter.task_id
+  if (filter.algo_name) params.algo_name = filter.algo_name
   if (filter.status !== null && filter.status !== '') params.status = filter.status
   try {
     const res = await alarmApi.list(params)
@@ -156,8 +169,14 @@ async function fetchTasks() {
   tasks.value = res.data || []
 }
 
+async function fetchAlgorithms() {
+  const res = await taskApi.algorithms()
+  algorithms.value = res.data || []
+}
+
 function resetFilter() {
   filter.task_id = null
+  filter.algo_name = null
   filter.status = null
   filter.dateRange = null
   fetchAlarms(1)
@@ -184,6 +203,7 @@ watch(() => route.query.task_id, (v) => {
 
 onMounted(() => {
   fetchTasks()
+  fetchAlgorithms()
   if (!route.query.task_id) fetchAlarms(1)
 })
 </script>
