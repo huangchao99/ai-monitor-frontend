@@ -238,6 +238,10 @@ async function fetchAlarms(p) {
   if (filter.task_id) params.task_id = filter.task_id
   if (filter.algo_name) params.algo_name = filter.algo_name
   if (filter.status !== null && filter.status !== '') params.status = filter.status
+  if (filter.dateRange && filter.dateRange.length === 2) {
+    params.start_date = filter.dateRange[0]
+    params.end_date = filter.dateRange[1]
+  }
   try {
     const res = await alarmApi.list(params)
     alarms.value = res.data?.list || []
