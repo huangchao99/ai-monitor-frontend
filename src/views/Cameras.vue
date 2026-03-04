@@ -138,6 +138,19 @@ async function toggleStream(row) {
   }
 }
 
+function resolveFlvUrl(flv) {
+  // flv_url 由后端以 127.0.0.1 硬编码生成，直接使用会导致
+  // 通过局域网 IP 访问时浏览器请求本机而非工控机。
+  // 用当前页面的 host（含端口）替换，确保无论通过 localhost 还是 IP 访问均可播放。
+  try {
+    const u = new URL(flv)
+    u.hostname = window.location.hostname
+    return u.toString()
+  } catch {
+    return flv
+  }
+}
+
 function previewCamera(row) {
   const flv = row.zlm_stream?.flv_url
   if (!flv || !isStreamActive(row)) {
@@ -145,7 +158,7 @@ function previewCamera(row) {
     return
   }
   previewCameraRef.value = row
-  previewUrl.value = flv
+  previewUrl.value = resolveFlvUrl(flv)
   previewVisible.value = true
 }
 
