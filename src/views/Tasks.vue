@@ -95,45 +95,63 @@
 
           <div v-if="selectedAlgos[algo.id]" style="margin-top:8px;padding:12px 16px;background:#f5f7fa;border-radius:6px">
             <el-row :gutter="12">
+              <!-- 按 param_definition 动态渲染算法参数字段 -->
+              <template v-for="param in getParamDef(algo)" :key="param.key">
+                <el-col :span="param.type === 'slider' ? 16 : 8">
+                  <el-form-item :label="param.label" :label-width="110">
+                    <el-input-number
+                      v-if="param.type === 'number'"
+                      v-model="algoParams[algo.id][param.key]"
+                      :min="param.min ?? undefined"
+                      :max="param.max ?? undefined"
+                      :step="param.step ?? 1"
+                      size="small" style="width:100%"
+                    />
+                    <div v-else-if="param.type === 'slider'" style="display:flex;align-items:center;gap:8px;width:100%">
+                      <el-slider
+                        v-model="algoParams[algo.id][param.key]"
+                        :min="param.min ?? 0"
+                        :max="param.max ?? 1"
+                        :step="param.step ?? 0.01"
+                        style="flex:1"
+                        size="small"
+                      />
+                      <span style="min-width:36px;text-align:right;font-size:13px;color:#606266">
+                        {{ algoParams[algo.id][param.key] }}
+                      </span>
+                    </div>
+                    <el-select
+                      v-else-if="param.type === 'select'"
+                      v-model="algoParams[algo.id][param.key]"
+                      size="small" style="width:100%"
+                    >
+                      <el-option
+                        v-for="opt in param.options"
+                        :key="opt"
+                        :label="opt"
+                        :value="opt"
+                      />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+              </template>
+
+              <!-- 通用字段：冷却时间（对应 alarm_config.alarm_interval） -->
               <el-col :span="8">
-                <el-form-item label="持续时间(s)" :label-width="90">
-                  <el-input-number
-                    v-model="algoParams[algo.id].duration"
-                    :min="1" :max="3600" size="small" style="width:100%"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="冷却时间(s)" :label-width="90">
+                <el-form-item label="冷却时间(s)" :label-width="110">
                   <el-input-number
                     v-model="algoParams[algo.id].alarm_interval"
                     :min="10" :max="3600" size="small" style="width:100%"
                   />
                 </el-form-item>
               </el-col>
-              <el-col :span="8">
-                <el-form-item label="置信度" :label-width="90">
-                  <el-input-number
-                    v-model="algoParams[algo.id].confidence"
-                    :min="0.1" :max="1" :step="0.05" :precision="2" size="small" style="width:100%"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row :gutter="12">
-              <el-col :span="8">
-                <el-form-item label="跳帧数" :label-width="90">
-                  <el-input-number
-                    v-model="algoParams[algo.id].skip_frame"
-                    :min="1" :max="30" size="small" style="width:100%"
-                  />
-                </el-form-item>
-              </el-col>
+
+              <!-- 通用字段：检测区域（对应 roi_config） -->
               <el-col :span="16">
-                <el-form-item label="检测区域" :label-width="90">
+                <el-form-item label="检测区域" :label-width="110">
                   <el-input
                     v-model="algoParams[algo.id].roi"
-                    placeholder='全屏留空, 或填入 [[0.1,0.1],[0.9,0.9],...]'
+                    placeholder='全屏留空，或填入 [[0.1,0.1],[0.9,0.9],...]'
                     size="small"
                   />
                 </el-form-item>
@@ -151,7 +169,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning } from '@element-plus/icons-vue'
@@ -178,16 +196,21 @@ const rules = {
 const selectedAlgos = reactive({})
 const algoParams = reactive({})
 
-function initAlgoParam(algo) {
-  if (!algoParams[algo.id]) {
-    algoParams[algo.id] = {
-      duration: 30,
-      alarm_interval: 60,
-      confidence: 0.35,
-      skip_frame: 5,
-      roi: '',
-    }
+function getParamDef(algo) {
+  if (!algo.param_definition) return []
+  try {
+    return JSON.parse(algo.param_definition) || []
+  } catch {
+    return []
   }
+}
+
+function initAlgoParam(algo) {
+  const defaults = { alarm_interval: 60, roi: '' }
+  getParamDef(algo).forEach(p => {
+    defaults[p.key] = p.default !== undefined ? p.default : (p.type === 'number' ? 0 : '')
+  })
+  algoParams[algo.id] = defaults
 }
 
 function onAlgoToggle(algo, checked) {
@@ -265,6 +288,7 @@ function resetForm() {
   form.camera_id = null
   form.remark = ''
   Object.keys(selectedAlgos).forEach(k => { selectedAlgos[k] = false })
+  algorithms.value.forEach(initAlgoParam)
   formRef.value?.resetFields()
 }
 
@@ -280,17 +304,18 @@ async function submitForm() {
   const algoDetails = selected.map(a => {
     const p = algoParams[a.id]
     const roiCfg = p.roi?.trim() ? p.roi.trim() : '[]'
+    // 从 param_definition 动态收集 algo_params 字段
+    const algoParamsObj = {}
+    getParamDef(a).forEach(pd => {
+      if (p[pd.key] !== undefined) {
+        algoParamsObj[pd.key] = p[pd.key]
+      }
+    })
     return {
       algo_id: a.id,
       roi_config: roiCfg,
-      algo_params: JSON.stringify({
-        skip_frame: p.skip_frame,
-        confidence: p.confidence,
-        duration: p.duration,
-      }),
-      alarm_config: JSON.stringify({
-        alarm_interval: p.alarm_interval,
-      }),
+      algo_params: JSON.stringify(algoParamsObj),
+      alarm_config: JSON.stringify({ alarm_interval: p.alarm_interval }),
     }
   })
 
