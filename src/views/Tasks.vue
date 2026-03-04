@@ -147,12 +147,11 @@
               </el-col>
 
               <!-- 通用字段：检测区域（对应 roi_config） -->
-              <el-col :span="16">
+              <el-col :span="24">
                 <el-form-item label="检测区域" :label-width="110">
-                  <el-input
+                  <RoiDrawer
                     v-model="algoParams[algo.id].roi"
-                    placeholder='全屏留空，或填入 [[0.1,0.1],[0.9,0.9],...]'
-                    size="small"
+                    :camera-id="form.camera_id"
                   />
                 </el-form-item>
               </el-col>
@@ -175,6 +174,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning } from '@element-plus/icons-vue'
 import { taskApi } from '@/api/task'
 import { cameraApi } from '@/api/camera'
+import RoiDrawer from '@/components/RoiDrawer.vue'
 
 const router = useRouter()
 const tasks = ref([])
