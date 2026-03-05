@@ -29,4 +29,18 @@ export const algoManageApi = {
     })
   },
   deletePlugin: (filename) => request.delete(`${BASE}/plugins/${filename}`),
+
+  // ─── Model File Upload ─────────────────────────────────
+  // Uploads a model or label file to the server, returns { path, filename, size }
+  uploadModelFile: (file, onProgress) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return axios.post('/api' + `${BASE}/upload-file`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: onProgress,
+    }).then(res => {
+      if (res.data?.code !== 0) throw new Error(res.data?.message || '上传失败')
+      return res.data
+    })
+  },
 }

@@ -128,19 +128,70 @@
     <el-dialog
       v-model="modelDialogVisible"
       :title="modelForm.id ? '编辑模型' : '新增模型'"
-      width="560px"
+      width="600px"
       @closed="resetModelForm"
     >
       <el-form :model="modelForm" :rules="modelRules" ref="modelFormRef" label-width="110px">
         <el-form-item label="模型名称" prop="model_name">
           <el-input v-model="modelForm.model_name" placeholder="如: YOLO11n-COCO" />
         </el-form-item>
-        <el-form-item label="模型文件路径" prop="model_path">
-          <el-input v-model="modelForm.model_path" placeholder="/home/hzhy/yolo11n-rk3576.rknn" />
+
+        <!-- 模型文件路径：上传 + 手填联动 -->
+        <el-form-item label="模型文件" prop="model_path">
+          <div style="display:flex;gap:8px;align-items:center;width:100%">
+            <el-input
+              v-model="modelForm.model_path"
+              placeholder="上传后自动填充，或手动输入服务器路径"
+              style="flex:1"
+              clearable
+            />
+            <el-upload
+              :show-file-list="false"
+              accept=".rknn,.onnx,.pt,.bin,.tflite,.weights"
+              :before-upload="() => false"
+              :on-change="(f) => handleModelFileChange(f, 'model_path')"
+            >
+              <el-button
+                :loading="modelFileUploading"
+                :icon="Upload"
+                size="default"
+              >上传</el-button>
+            </el-upload>
+          </div>
+          <div v-if="modelForm.model_path" style="margin-top:4px;font-size:12px;color:#67c23a">
+            <el-icon style="vertical-align:middle"><CircleCheck /></el-icon>
+            {{ modelForm.model_path }}
+          </div>
         </el-form-item>
-        <el-form-item label="标签文件路径">
-          <el-input v-model="modelForm.labels_path" placeholder="/home/hzhy/yolo11n-labels.txt" />
+
+        <!-- 标签文件路径：上传 + 手填联动 -->
+        <el-form-item label="标签文件">
+          <div style="display:flex;gap:8px;align-items:center;width:100%">
+            <el-input
+              v-model="modelForm.labels_path"
+              placeholder="上传后自动填充，或手动输入服务器路径（可选）"
+              style="flex:1"
+              clearable
+            />
+            <el-upload
+              :show-file-list="false"
+              accept=".txt,.names"
+              :before-upload="() => false"
+              :on-change="(f) => handleModelFileChange(f, 'labels_path')"
+            >
+              <el-button
+                :loading="labelsFileUploading"
+                :icon="Upload"
+                size="default"
+              >上传</el-button>
+            </el-upload>
+          </div>
+          <div v-if="modelForm.labels_path" style="margin-top:4px;font-size:12px;color:#67c23a">
+            <el-icon style="vertical-align:middle"><CircleCheck /></el-icon>
+            {{ modelForm.labels_path }}
+          </div>
         </el-form-item>
+
         <el-form-item label="模型类型">
           <el-select v-model="modelForm.model_type" style="width:100%">
             <el-option label="yolov11" value="yolov11" />
@@ -294,7 +345,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Delete, Edit, Upload } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, Edit, Upload, CircleCheck } from '@element-plus/icons-vue'
 import { algoManageApi } from '@/api/algoManage'
 
 const activeTab = ref('models')
@@ -304,6 +355,8 @@ const models = ref([])
 const modelLoading = ref(false)
 const modelDialogVisible = ref(false)
 const modelFormLoading = ref(false)
+const modelFileUploading = ref(false)
+const labelsFileUploading = ref(false)
 const modelFormRef = ref(null)
 const modelForm = reactive({
   id: null,
@@ -359,7 +412,26 @@ function resetModelForm() {
   modelForm.input_height = 640
   modelForm.conf_threshold = 0.35
   modelForm.nms_threshold = 0.45
+  modelFileUploading.value = false
+  labelsFileUploading.value = false
   modelFormRef.value?.resetFields()
+}
+
+// 处理模型文件或标签文件的上传（el-upload on-change 回调）
+async function handleModelFileChange(uploadFile, field) {
+  const file = uploadFile.raw
+  if (!file) return
+  const loadingRef = field === 'model_path' ? modelFileUploading : labelsFileUploading
+  loadingRef.value = true
+  try {
+    const res = await algoManageApi.uploadModelFile(file)
+    modelForm[field] = res.data.path
+    ElMessage.success(`文件已上传：${res.data.filename}`)
+  } catch (e) {
+    ElMessage.error(e.message || '上传失败')
+  } finally {
+    loadingRef.value = false
+  }
 }
 
 async function submitModel() {
