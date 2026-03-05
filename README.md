@@ -39,6 +39,9 @@ ai-monitor-frontend/
     ├── router/           # Vue Router 路由配置
     ├── stores/           # Pinia 状态管理
     ├── api/              # axios 封装的后端 API 调用
+    ├── components/
+    │   ├── VideoPlayer.vue  # mpegts.js HTTP-FLV 播放器封装
+    │   └── RoiDrawer.vue    # ROI 可视化画区域组件（Canvas 多边形绘制）
     └── views/
         ├── Dashboard.vue # 控制台总览页
         ├── Cameras.vue   # 摄像头管理页
@@ -90,12 +93,15 @@ ai-monitor-frontend/
 ### 任务管理（`Tasks.vue`）
 
 - 任务 CRUD（绑定摄像头、配置任务名称）
-- 创建时可绑定多个算法，每个算法独立配置：
-  - 置信度阈值（`confidence`）
-  - 触发报警持续时间（`duration`，单位：秒）
-  - 报警冷却时间（`alarm_interval`，单位：秒）
-  - 推理跳帧数（`skip_frame`）
-  - ROI 感兴趣区域（归一化多边形坐标，留空表示全屏）
+- 创建时可绑定多个算法，算法配置参数**动态渲染**：
+  - 参数项、标签、类型、范围、默认值均来自后端 `GET /api/algorithms` 返回的 `param_definition` JSON 字段
+  - 支持控件类型：`number`（数字输入框）、`slider`（滑块）、`select`（下拉框）
+  - 通用参数"报警冷却时间"（`alarm_interval`）固定显示，不经由 `param_definition` 控制
+- ROI 检测区域使用 **`RoiDrawer.vue`** 组件，打开弹窗后自动加载摄像头当前截图作为背景，支持：
+  - 鼠标点击逐点绘制多边形，最后一点自动闭合
+  - "撤销"按钮逐步删除顶点
+  - 实时预览多边形覆盖层
+  - 点击"确认"输出归一化坐标 `[[x,y],...]`，存入 `roi_config`；点"清除"恢复全屏（空数组）
 - 任务一键启/停（Go 后端转发至 Python 算法服务）
 - 一键跳转查看该任务的告警记录
 
@@ -118,6 +124,8 @@ ai-monitor-frontend/
 | `/snapshots` | `http://localhost:8090` | 报警抓图静态文件 |
 
 视频直播流（`/live/*.flv`）直接访问 ZLMediaKit（`:80`），不经过代理。
+
+**`RoiDrawer.vue` 依赖的截图接口：** `GET /api/cameras/:id/snapshot` 由 Go 后端代理 ZLM `getSnap` 实现，ZLM 需配置正确的 ffmpeg 路径（详见 Go 后端 README）。
 
 ---
 
