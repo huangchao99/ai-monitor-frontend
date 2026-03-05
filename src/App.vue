@@ -30,6 +30,10 @@
           <span>事件告警</span>
           <el-badge v-if="unhandledCount > 0" :value="unhandledCount" class="alarm-badge" />
         </el-menu-item>
+        <el-menu-item index="/algo-manage">
+          <el-icon><Grid /></el-icon>
+          <span>算法管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -58,7 +62,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor } from '@element-plus/icons-vue'
+import { Monitor, Grid } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
