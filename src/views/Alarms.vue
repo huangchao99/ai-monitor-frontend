@@ -56,7 +56,7 @@
         <el-table-column label="报警时间" width="165">
           <template #default="{ row }">{{ formatTime(row.alarm_time) }}</template>
         </el-table-column>
-        <el-table-column prop="task_name" label="任务" min-width="130" />
+        <el-table-column prop="task_name" label="任务" min-width="110" show-overflow-tooltip />
         <el-table-column prop="camera_name" label="摄像头" width="110" />
         <el-table-column prop="algo_name" label="算法" width="100" />
         <el-table-column prop="alarm_location" label="地点" width="120" show-overflow-tooltip />
@@ -79,7 +79,7 @@
             <el-icon v-else style="color:#ddd"><Picture /></el-icon>
           </template>
         </el-table-column>
-        <el-table-column label="详情" min-width="160" show-overflow-tooltip>
+        <el-table-column label="详情" min-width="120" show-overflow-tooltip>
           <template #default="{ row }">
             <el-text v-if="row.alarm_details && row.alarm_details !== '{}'">{{ row.alarm_details }}</el-text>
             <span v-else style="color:#c0c4cc">—</span>
@@ -92,17 +92,29 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="90" align="center" fixed="right">
+        <el-table-column label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button
-              v-if="row.status === 0"
-              size="small"
-              type="success"
-              :icon="Check"
-              @click="markHandled(row)"
-              :loading="handling[row.id]"
-            >处理</el-button>
-            <el-tag v-else type="info" size="small">—</el-tag>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+              <el-tooltip :content="row.status === 0 ? '标记为已处理' : '已处理'" placement="top">
+                <el-button
+                  size="small"
+                  :type="row.status === 0 ? 'success' : 'info'"
+                  :icon="Check"
+                  :disabled="row.status === 1"
+                  :loading="handling[row.id]"
+                  @click="row.status === 0 && markHandled(row)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除告警" placement="top">
+                <el-button
+                  size="small"
+                  type="danger"
+                  :icon="Delete"
+                  :loading="deleting[row.id]"
+                  @click="deleteAlarm(row)"
+                />
+              </el-tooltip>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -127,6 +139,13 @@
                   :class="{ 'is-loading': handling[row.id] }"
                   @click="markHandled(row)"
                 ><Check /></el-icon>
+              </el-tooltip>
+              <el-tooltip content="删除告警" placement="top">
+                <el-icon
+                  class="action-icon action-icon--delete"
+                  :class="{ 'is-loading': deleting[row.id] }"
+                  @click="deleteAlarm(row)"
+                ><Delete /></el-icon>
               </el-tooltip>
             </div>
           </div>
@@ -197,8 +216,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Search, Refresh, Check, Picture, Grid, List, Clock, Location, VideoCamera } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search, Refresh, Check, Delete, Picture, Grid, List, Clock, Location, VideoCamera } from '@element-plus/icons-vue'
 import { alarmApi } from '@/api/alarm'
 import { taskApi } from '@/api/task'
 
@@ -208,10 +227,11 @@ const tasks = ref([])
 const algorithms = ref([])
 const loading = ref(false)
 const handling = reactive({})
+const deleting = reactive({})
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
-const viewMode = ref('list')
+const viewMode = ref('grid')
 
 const filter = reactive({
   task_id: null,
@@ -277,6 +297,28 @@ async function markHandled(row) {
     await fetchAlarms()
   } finally {
     handling[row.id] = false
+  }
+}
+
+async function deleteAlarm(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除该告警记录？此操作将同时删除对应快照图片，不可恢复。`,
+      '删除告警',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  deleting[row.id] = true
+  try {
+    await alarmApi.remove(row.id)
+    ElMessage.success('告警已删除')
+    await fetchAlarms()
+  } catch (e) {
+    ElMessage.error(e.message || '删除失败')
+  } finally {
+    deleting[row.id] = false
   }
 }
 
@@ -374,6 +416,15 @@ onMounted(() => {
 .action-icon--check:hover {
   background: #f0f9eb;
   color: #529b2e;
+}
+
+.action-icon--delete {
+  color: #f56c6c;
+}
+
+.action-icon--delete:hover {
+  background: #fef0f0;
+  color: #c45656;
 }
 
 .action-icon.is-loading {
