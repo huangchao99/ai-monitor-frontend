@@ -1,128 +1,184 @@
 <template>
-  <div>
-    <el-tabs v-model="activeTab" type="border-card">
+  <div class="algo-manage-container">
+    <el-card class="algo-manage-card" shadow="never">
+    <el-tabs v-model="activeTab" class="custom-tabs">
       <!-- ══════════════════ Tab 1: 模型管理 ══════════════════ -->
       <el-tab-pane label="模型管理" name="models">
-        <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+        <div class="tab-toolbar">
           <el-button type="primary" :icon="Plus" @click="openModelDialog()">新增模型</el-button>
-          <el-button :icon="Refresh" circle @click="fetchModels" :loading="modelLoading" />
+          <el-button :icon="Refresh" @click="fetchModels" :loading="modelLoading">刷新</el-button>
         </div>
-        <el-table :data="models" v-loading="modelLoading" border stripe>
-          <el-table-column prop="id" label="ID" width="60" />
-          <el-table-column prop="model_name" label="模型名称" min-width="140" />
-          <el-table-column prop="model_type" label="类型" width="100" />
-          <el-table-column prop="model_path" label="模型文件路径" min-width="200" show-overflow-tooltip />
-          <el-table-column prop="labels_path" label="标签文件路径" min-width="180" show-overflow-tooltip />
-          <el-table-column label="输入尺寸" width="100" align="center">
-            <template #default="{ row }">{{ row.input_width }}×{{ row.input_height }}</template>
+        <el-table :data="models" v-loading="modelLoading" border stripe style="width: 100%">
+          <el-table-column prop="id" label="ID" width="60" align="center" />
+          <el-table-column prop="model_name" label="模型名称" min-width="160">
+            <template #default="{ row }">
+              <div style="font-weight: 600; color: var(--text-main)">{{ row.model_name }}</div>
+              <div style="font-size: 12px; color: var(--text-secondary)">{{ row.model_type }}</div>
+            </template>
           </el-table-column>
-          <el-table-column label="置信阈值" prop="conf_threshold" width="90" align="center" />
-          <el-table-column label="NMS阈值" prop="nms_threshold" width="90" align="center" />
+          <el-table-column prop="model_path" label="模型文件路径" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              <code class="path-code">{{ row.model_path }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="labels_path" label="标签文件路径" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              <code v-if="row.labels_path" class="path-code">{{ row.labels_path }}</code>
+              <span v-else style="color: var(--text-secondary)">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="输入尺寸" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" effect="plain">{{ row.input_width }} × {{ row.input_height }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="阈值" width="140" align="center">
+            <template #default="{ row }">
+              <div style="font-size: 12px; color: var(--text-secondary)">
+                置信度: <strong style="color:var(--text-main)">{{ row.conf_threshold }}</strong><br>
+                NMS: <strong style="color:var(--text-main)">{{ row.nms_threshold }}</strong>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" :icon="Edit" @click="openModelDialog(row)">编辑</el-button>
-              <el-button size="small" type="danger" :icon="Delete" @click="removeModel(row)" />
+              <el-button-group>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button size="small" :icon="Edit" @click="openModelDialog(row)" />
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button size="small" type="danger" :icon="Delete" @click="removeModel(row)" />
+                </el-tooltip>
+              </el-button-group>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
 
       <!-- ══════════════════ Tab 2: 算法管理 ══════════════════ -->
-      <el-tab-pane label="算法管理" name="algorithms">
-        <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+      <el-tab-pane label="算法配置" name="algorithms">
+        <div class="tab-toolbar">
           <el-button type="primary" :icon="Plus" @click="openAlgoDialog()">新增算法</el-button>
-          <el-button :icon="Refresh" circle @click="fetchAlgorithms" :loading="algoLoading" />
+          <el-button :icon="Refresh" @click="fetchAlgorithms" :loading="algoLoading">刷新</el-button>
         </div>
-        <el-table :data="algorithms" v-loading="algoLoading" border stripe>
-          <el-table-column prop="id" label="ID" width="60" />
-          <el-table-column prop="algo_name" label="算法名称" min-width="120" />
-          <el-table-column prop="algo_key" label="插件 Key" width="140">
+        <el-table :data="algorithms" v-loading="algoLoading" border stripe style="width: 100%">
+          <el-table-column prop="id" label="ID" width="60" align="center" />
+          <el-table-column prop="algo_name" label="算法名称" min-width="160">
             <template #default="{ row }">
-              <el-tag type="info" size="small">{{ row.algo_key }}</el-tag>
+              <div style="font-weight: 600; color: var(--text-main)">{{ row.algo_name }}</div>
+              <div style="font-size: 12px; color: var(--text-secondary)">{{ row.category || '未分类' }}</div>
             </template>
           </el-table-column>
-          <el-table-column prop="category" label="分类" width="120" />
-          <el-table-column label="关联模型" min-width="180">
+          <el-table-column prop="algo_key" label="插件 Key" width="160">
             <template #default="{ row }">
-              <template v-if="row.models && row.models.length">
-                <el-tag
-                  v-for="m in row.models"
-                  :key="m.id"
-                  size="small"
-                  type="success"
-                  style="margin:2px"
-                >{{ m.model_name }}</el-tag>
-              </template>
-              <span v-else style="color:#c0c4cc">未关联</span>
+              <el-tag type="info" effect="light">{{ row.algo_key }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="参数定义" width="90" align="center">
+          <el-table-column label="关联模型" min-width="200">
             <template #default="{ row }">
-              <el-tag size="small" :type="paramCount(row) > 0 ? 'primary' : 'info'">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px">
+                <template v-if="row.models && row.models.length">
+                  <el-tag
+                    v-for="m in row.models"
+                    :key="m.id"
+                    size="small"
+                    type="success"
+                    effect="plain"
+                    round
+                  >{{ m.model_name }}</el-tag>
+                </template>
+                <span v-else style="color: var(--text-secondary); font-size: 13px;">未关联</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="参数定义" width="120" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" :type="paramCount(row) > 0 ? 'primary' : 'info'" effect="dark" round>
                 {{ paramCount(row) }} 个参数
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column label="操作" width="140" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button size="small" :icon="Edit" @click="openAlgoDialog(row)">编辑</el-button>
-              <el-button size="small" type="danger" :icon="Delete" @click="removeAlgorithm(row)" />
+              <el-button-group>
+                <el-tooltip content="编辑" placement="top">
+                  <el-button size="small" :icon="Edit" @click="openAlgoDialog(row)" />
+                </el-tooltip>
+                <el-tooltip content="删除" placement="top">
+                  <el-button size="small" type="danger" :icon="Delete" @click="removeAlgorithm(row)" />
+                </el-tooltip>
+              </el-button-group>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
 
       <!-- ══════════════════ Tab 3: 插件管理 ══════════════════ -->
-      <el-tab-pane label="插件管理" name="plugins">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <el-upload
-            ref="uploadRef"
-            :show-file-list="false"
-            accept=".py"
-            :before-upload="beforeUpload"
-            :http-request="handleUpload"
-          >
-            <el-button type="primary" :icon="Upload" :loading="uploadLoading">上传插件 (.py)</el-button>
-          </el-upload>
-          <div style="display:flex;align-items:center;gap:8px">
-            <el-alert
-              title="上传插件后，请在「算法管理」中配置对应算法记录（algo_key 需与插件类的 algo_key 一致）"
-              type="info"
-              :closable="false"
-              show-icon
-              style="padding:6px 12px"
-            />
-            <el-button :icon="Refresh" circle @click="fetchPlugins" :loading="pluginLoading" />
+      <el-tab-pane label="插件文件" name="plugins">
+        <div class="tab-toolbar">
+          <div style="display:flex;align-items:center;gap:12px">
+            <el-upload
+              ref="uploadRef"
+              :show-file-list="false"
+              accept=".py"
+              :before-upload="beforeUpload"
+              :http-request="handleUpload"
+            >
+              <el-button type="primary" :icon="Upload" :loading="uploadLoading">上传插件 (.py)</el-button>
+            </el-upload>
+            <el-button :icon="Refresh" @click="fetchPlugins" :loading="pluginLoading">刷新</el-button>
           </div>
+          <el-alert
+            title="提示：上传插件后，请在「算法配置」中添加对应记录，且 algo_key 需与插件类一致"
+            type="info"
+            :closable="false"
+            show-icon
+            style="padding: 6px 16px; margin: 0; background-color: #f8fafc;"
+          />
         </div>
-        <el-table :data="plugins" v-loading="pluginLoading" border stripe>
-          <el-table-column prop="filename" label="文件名" min-width="180" />
-          <el-table-column label="algo_key" width="160">
+        <el-table :data="plugins" v-loading="pluginLoading" border stripe style="width: 100%">
+          <el-table-column prop="filename" label="文件名" min-width="200">
             <template #default="{ row }">
-              <el-tag v-if="row.algo_key" type="success" size="small">{{ row.algo_key }}</el-tag>
-              <span v-else style="color:#c0c4cc">未解析到</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <el-icon color="#64748b"><Document /></el-icon>
+                <span style="font-weight: 500">{{ row.filename }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="文件大小" width="110" align="center">
-            <template #default="{ row }">{{ formatSize(row.size) }}</template>
+          <el-table-column label="解析的 algo_key" width="200">
+            <template #default="{ row }">
+              <el-tag v-if="row.algo_key" type="success" effect="light">{{ row.algo_key }}</el-tag>
+              <span v-else style="color: var(--text-secondary); font-size: 13px;">未解析到</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="文件大小" width="120" align="center">
+            <template #default="{ row }">
+              <span style="color: var(--text-secondary)">{{ formatSize(row.size) }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="修改时间" width="180" align="center">
-            <template #default="{ row }">{{ formatTime(row.modified_at) }}</template>
+            <template #default="{ row }">
+              <span style="color: var(--text-secondary); font-size: 13px;">{{ formatTime(row.modified_at) }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="操作" width="100" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button
-                size="small"
-                type="danger"
-                :icon="Delete"
-                :disabled="row.protected"
-                @click="removePlugin(row)"
-              >删除</el-button>
+              <el-tooltip content="删除插件" placement="top">
+                <el-button
+                  size="small"
+                  type="danger"
+                  :icon="Delete"
+                  :disabled="row.protected"
+                  @click="removePlugin(row)"
+                  circle
+                />
+              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
     </el-tabs>
+  </el-card>
 
     <!-- ══════════ 模型新建/编辑对话框 ══════════ -->
     <el-dialog
@@ -345,7 +401,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Delete, Edit, Upload, CircleCheck } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, Edit, Upload, CircleCheck, Document } from '@element-plus/icons-vue'
 import { algoManageApi } from '@/api/algoManage'
 
 const activeTab = ref('models')
@@ -673,3 +729,35 @@ onMounted(() => {
   fetchPlugins()
 })
 </script>
+
+<style scoped>
+.algo-manage-card {
+  min-height: calc(100vh - 112px);
+}
+
+.custom-tabs :deep(.el-tabs__nav-wrap) {
+  margin-bottom: 20px;
+}
+
+.custom-tabs :deep(.el-tabs__item) {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.tab-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.path-code {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+</style>
