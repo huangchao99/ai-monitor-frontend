@@ -35,33 +35,54 @@
           <span v-else style="color:#c0c4cc">—</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" align="center" fixed="right">
+      <el-table-column label="操作" width="200" align="center" fixed="right">
         <template #default="{ row }">
-          <el-button
-            size="small"
-            :type="row.status === 1 ? 'warning' : 'success'"
-            :icon="row.status === 1 ? VideoPause : VideoPlay"
-            @click="toggleTask(row)"
-            :loading="actionLoading[row.id]"
-          >{{ row.status === 1 ? '停止' : '启动' }}</el-button>
-          <el-button
-            size="small"
-            :icon="Warning"
-            @click="viewAlarms(row)"
-          >告警</el-button>
-          <el-button
-            size="small"
-            type="danger"
-            :icon="Delete"
-            @click="removeTask(row)"
-            :loading="actionLoading[row.id]"
-          />
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <el-tooltip :content="row.status === 1 ? '停止任务' : '启动任务'" placement="top">
+              <el-button
+                size="small"
+                circle
+                :type="row.status === 1 ? 'warning' : 'success'"
+                :icon="row.status === 1 ? VideoPause : VideoPlay"
+                @click="toggleTask(row)"
+                :loading="actionLoading[row.id]"
+              />
+            </el-tooltip>
+            <el-tooltip content="编辑任务" placement="top">
+              <el-button
+                size="small"
+                circle
+                :icon="Edit"
+                @click="openEdit(row)"
+                :loading="actionLoading[row.id]"
+              />
+            </el-tooltip>
+            <el-tooltip content="查看告警" placement="top">
+              <el-button
+                size="small"
+                circle
+                type="primary"
+                :icon="Warning"
+                @click="viewAlarms(row)"
+              />
+            </el-tooltip>
+            <el-tooltip content="删除任务" placement="top">
+              <el-button
+                size="small"
+                circle
+                type="danger"
+                :icon="Delete"
+                @click="removeTask(row)"
+                :loading="actionLoading[row.id]"
+              />
+            </el-tooltip>
+          </div>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- Create Task Dialog -->
-    <el-dialog v-model="formVisible" title="新建任务" width="680px" @closed="resetForm">
+    <!-- Create / Edit Task Dialog -->
+    <el-dialog v-model="formVisible" :title="editMode ? '编辑任务' : '新建任务'" width="680px" @closed="resetForm">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="任务名称" prop="task_name">
           <el-input v-model="form.task_name" placeholder="如: 工位监测任务" />
@@ -161,7 +182,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="formLoading">创建</el-button>
+        <el-button type="primary" @click="submitForm" :loading="formLoading">{{ editMode ? '保存' : '创建' }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -171,7 +192,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning, Edit } from '@element-plus/icons-vue'
 import { taskApi } from '@/api/task'
 import { cameraApi } from '@/api/camera'
 import RoiDrawer from '@/components/RoiDrawer.vue'
@@ -186,6 +207,8 @@ const actionLoading = reactive({})
 const formVisible = ref(false)
 const formLoading = ref(false)
 const formRef = ref(null)
+const editMode = ref(false)
+const editTaskId = ref(null)
 const form = reactive({ task_name: '', camera_id: null, remark: '' })
 const rules = {
   task_name: [{ required: true, message: '请输入任务名称' }],
@@ -280,10 +303,74 @@ async function removeTask(row) {
 }
 
 function openCreate() {
+  editMode.value = false
+  editTaskId.value = null
+  formVisible.value = true
+}
+
+async function openEdit(row) {
+  // 如果任务运行中，先提示并自动停止
+  if (row.status === 1) {
+    try {
+      await ElMessageBox.confirm(
+        `任务「${row.task_name}」正在运行，编辑前需先停止，是否继续？`,
+        '提示',
+        { type: 'warning', confirmButtonText: '停止并编辑', cancelButtonText: '取消' }
+      )
+    } catch {
+      return
+    }
+    actionLoading[row.id] = true
+    try {
+      await taskApi.stop(row.id)
+      await fetchTasks()
+      // 从最新列表里拿更新后的 row
+      row = tasks.value.find(t => t.id === row.id) || row
+    } catch (e) {
+      ElMessage.error('停止失败：' + e.message)
+      return
+    } finally {
+      actionLoading[row.id] = false
+    }
+  }
+
+  // 填充表单
+  editMode.value = true
+  editTaskId.value = row.id
+  form.task_name = row.task_name
+  form.camera_id = row.camera_id
+  form.remark = row.remark || ''
+
+  // 重置算法选择，再根据任务已有配置回填
+  Object.keys(selectedAlgos).forEach(k => { selectedAlgos[k] = false })
+  algorithms.value.forEach(initAlgoParam)
+
+  for (const detail of (row.algo_details || [])) {
+    selectedAlgos[detail.algo_id] = true
+    const algo = algorithms.value.find(a => a.id === detail.algo_id)
+    if (!algo) continue
+
+    let ap = {}
+    try { ap = JSON.parse(detail.algo_params || '{}') } catch {}
+    let ac = {}
+    try { ac = JSON.parse(detail.alarm_config || '{}') } catch {}
+
+    if (!algoParams[algo.id]) initAlgoParam(algo)
+    // 回填 param_definition 中的字段
+    getParamDef(algo).forEach(pd => {
+      if (ap[pd.key] !== undefined) algoParams[algo.id][pd.key] = ap[pd.key]
+    })
+    // 回填冷却时间和 ROI
+    if (ac.alarm_interval !== undefined) algoParams[algo.id].alarm_interval = ac.alarm_interval
+    algoParams[algo.id].roi = detail.roi_config === '[]' ? '' : (detail.roi_config || '')
+  }
+
   formVisible.value = true
 }
 
 function resetForm() {
+  editMode.value = false
+  editTaskId.value = null
   form.task_name = ''
   form.camera_id = null
   form.remark = ''
@@ -319,15 +406,22 @@ async function submitForm() {
     }
   })
 
+  const payload = {
+    task_name: form.task_name,
+    camera_id: form.camera_id,
+    remark: form.remark,
+    algo_details: algoDetails,
+  }
+
   formLoading.value = true
   try {
-    await taskApi.create({
-      task_name: form.task_name,
-      camera_id: form.camera_id,
-      remark: form.remark,
-      algo_details: algoDetails,
-    })
-    ElMessage.success('任务创建成功')
+    if (editMode.value) {
+      await taskApi.update(editTaskId.value, payload)
+      ElMessage.success('任务已更新')
+    } else {
+      await taskApi.create(payload)
+      ElMessage.success('任务创建成功')
+    }
     formVisible.value = false
     await fetchTasks()
   } finally {
