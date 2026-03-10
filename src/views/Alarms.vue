@@ -49,9 +49,34 @@
       </el-row>
     </el-card>
 
+    <!-- Batch action bar (shown when items are selected) -->
+    <Transition name="batch-bar">
+      <div v-if="selectedIds.size > 0" class="batch-bar">
+        <span class="batch-bar__info">
+          已选 <strong>{{ selectedIds.size }}</strong> 条
+        </span>
+        <el-button size="small" @click="clearSelection">取消选择</el-button>
+        <el-button
+          size="small"
+          type="danger"
+          :icon="Delete"
+          :loading="batchDeleting"
+          @click="batchDeleteAlarms"
+        >批量删除</el-button>
+      </div>
+    </Transition>
+
     <!-- List mode: Table -->
     <template v-if="viewMode === 'list'">
-      <el-table :data="alarms" v-loading="loading" border stripe>
+      <el-table
+        ref="tableRef"
+        :data="alarms"
+        v-loading="loading"
+        border
+        stripe
+        @selection-change="onTableSelectionChange"
+      >
+        <el-table-column type="selection" width="46" />
         <el-table-column prop="id" label="ID" width="65" />
         <el-table-column label="报警时间" width="165">
           <template #default="{ row }">{{ formatTime(row.alarm_time) }}</template>
@@ -123,9 +148,21 @@
     <!-- Grid mode: Image cards -->
     <template v-else>
       <div v-loading="loading" class="alarm-grid">
-        <div v-for="row in alarms" :key="row.id" class="alarm-card">
+        <div
+          v-for="row in alarms"
+          :key="row.id"
+          class="alarm-card"
+          :class="{ 'is-selected': selectedIds.has(row.id) }"
+          @click.self="toggleSelect(row.id)"
+        >
           <!-- Card header -->
           <div class="alarm-card__header">
+            <el-checkbox
+              :model-value="selectedIds.has(row.id)"
+              @change="toggleSelect(row.id)"
+              @click.stop
+              style="margin-right:6px;flex-shrink:0"
+            />
             <span class="alarm-card__algo">{{ row.algo_name || '未知算法' }}</span>
             <div class="alarm-card__actions">
               <el-tag
@@ -228,10 +265,15 @@ const algorithms = ref([])
 const loading = ref(false)
 const handling = reactive({})
 const deleting = reactive({})
+const batchDeleting = ref(false)
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
 const viewMode = ref('grid')
+const tableRef = ref(null)
+
+// 批量选择状态
+const selectedIds = reactive(new Set())
 
 const filter = reactive({
   task_id: null,
@@ -251,9 +293,30 @@ function formatTime(t) {
   return d.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-')
 }
 
+// 列表模式：el-table 选择回调
+function onTableSelectionChange(rows) {
+  selectedIds.clear()
+  rows.forEach(r => selectedIds.add(r.id))
+}
+
+// 卡片模式：手动 toggle
+function toggleSelect(id) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id)
+  } else {
+    selectedIds.add(id)
+  }
+}
+
+function clearSelection() {
+  selectedIds.clear()
+  tableRef.value?.clearSelection()
+}
+
 async function fetchAlarms(p) {
   if (p) page.value = p
   loading.value = true
+  clearSelection()
   const params = { page: page.value, size: pageSize.value }
   if (filter.task_id) params.task_id = filter.task_id
   if (filter.algo_name) params.algo_name = filter.algo_name
@@ -322,6 +385,29 @@ async function deleteAlarm(row) {
   }
 }
 
+async function batchDeleteAlarms() {
+  const ids = [...selectedIds]
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${ids.length} 条告警记录？此操作将同时删除对应快照图片，不可恢复。`,
+      '批量删除告警',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  batchDeleting.value = true
+  try {
+    await alarmApi.batchRemove(ids)
+    ElMessage.success(`已删除 ${ids.length} 条告警记录`)
+    await fetchAlarms(1)
+  } catch (e) {
+    ElMessage.error(e.message || '批量删除失败')
+  } finally {
+    batchDeleting.value = false
+  }
+}
+
 watch(() => route.query.task_id, (v) => {
   if (v) {
     filter.task_id = Number(v)
@@ -343,6 +429,40 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ── Batch action bar ── */
+.batch-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  background: #ecf5ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 6px;
+}
+
+.batch-bar__info {
+  font-size: 13px;
+  color: #606266;
+  flex: 1;
+}
+
+.batch-bar__info strong {
+  color: #409eff;
+  font-size: 15px;
+}
+
+.batch-bar-enter-active,
+.batch-bar-leave-active {
+  transition: all 0.2s ease;
+}
+
+.batch-bar-enter-from,
+.batch-bar-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
 /* ── Grid layout ── */
 .alarm-grid {
   display: grid;
@@ -364,7 +484,7 @@ onMounted(() => {
   border-radius: 8px;
   border: 1px solid #e4e7ed;
   overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
   display: flex;
   flex-direction: column;
 }
@@ -372,6 +492,11 @@ onMounted(() => {
 .alarm-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
+}
+
+.alarm-card.is-selected {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
 }
 
 /* Header */

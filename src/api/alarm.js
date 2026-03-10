@@ -4,4 +4,5 @@ export const alarmApi = {
   list: (params) => request.get('/alarms', { params }),
   updateStatus: (id, status) => request.put(`/alarms/${id}`, { status }),
   remove: (id) => request.delete(`/alarms/${id}`),
+  batchRemove: (ids) => request.post('/alarms/batch-delete', { ids }),
 }
