@@ -1,188 +1,259 @@
 <template>
-  <div>
+  <div class="tasks-container">
     <!-- Toolbar -->
-    <div style="display:flex;justify-content:space-between;margin-bottom:16px">
-      <el-button type="primary" :icon="Plus" @click="openCreate">新建任务</el-button>
-      <el-button :icon="Refresh" circle @click="fetchTasks" :loading="tableLoading" />
-    </div>
+    <el-card class="toolbar-card" style="margin-bottom: 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:12px">
+          <el-button type="primary" :icon="Plus" @click="openCreate">新建监控任务</el-button>
+          <el-button :icon="Refresh" @click="fetchTasks" :loading="tableLoading">刷新</el-button>
+        </div>
+        <div style="color: #909399; font-size: 14px;">
+          共 {{ tasks.length }} 个任务
+        </div>
+      </div>
+    </el-card>
 
     <!-- Table -->
-    <el-table :data="tasks" v-loading="tableLoading" border stripe>
-      <el-table-column prop="id" label="ID" width="60" />
-      <el-table-column prop="task_name" label="任务名称" min-width="150" />
-      <el-table-column prop="camera_name" label="摄像头" width="120" />
-      <el-table-column label="算法" min-width="180">
-        <template #default="{ row }">
-          <el-tag
-            v-for="d in row.algo_details"
-            :key="d.algo_id"
-            size="small"
-            style="margin:2px"
-          >{{ d.algo_name }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" width="100" align="center">
-        <template #default="{ row }">
-          <el-tag :type="taskStatusType(row.status)" size="small">
-            {{ taskStatusLabel(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="alarm_count" label="告警次数" width="90" align="center" />
-      <el-table-column label="错误信息" min-width="160" show-overflow-tooltip>
-        <template #default="{ row }">
-          <span v-if="row.error_msg" style="color:#f56c6c">{{ row.error_msg }}</span>
-          <span v-else style="color:#c0c4cc">—</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" align="center" fixed="right">
-        <template #default="{ row }">
-          <div style="display:flex;align-items:center;justify-content:center;gap:6px">
-            <el-tooltip :content="row.status === 1 ? '停止任务' : '启动任务'" placement="top">
-              <el-button
+    <el-card shadow="never" style="padding: 0;">
+      <el-table :data="tasks" v-loading="tableLoading" border stripe style="width: 100%">
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="task_name" label="任务名称" min-width="180">
+          <template #default="{ row }">
+            <div style="font-weight: 600; color: #303133">{{ row.task_name }}</div>
+            <div style="font-size: 12px; color: #909399">{{ row.remark || '无备注' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="camera_name" label="摄像头" width="150">
+          <template #default="{ row }">
+            <div style="display:flex;align-items:center;gap:4px">
+              <el-icon><VideoCamera /></el-icon>
+              <span>{{ row.camera_name }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="运行算法" min-width="200">
+          <template #default="{ row }">
+            <div style="display: flex; flex-wrap: wrap; gap: 4px">
+              <el-tag
+                v-for="d in row.algo_details"
+                :key="d.algo_id"
                 size="small"
-                circle
-                :type="row.status === 1 ? 'warning' : 'success'"
-                :icon="row.status === 1 ? VideoPause : VideoPlay"
-                @click="toggleTask(row)"
-                :loading="actionLoading[row.id]"
-              />
-            </el-tooltip>
-            <el-tooltip content="编辑任务" placement="top">
-              <el-button
-                size="small"
-                circle
-                :icon="Edit"
-                @click="openEdit(row)"
-                :loading="actionLoading[row.id]"
-              />
-            </el-tooltip>
-            <el-tooltip content="查看告警" placement="top">
-              <el-button
-                size="small"
-                circle
-                type="primary"
-                :icon="Warning"
-                @click="viewAlarms(row)"
-              />
-            </el-tooltip>
-            <el-tooltip content="删除任务" placement="top">
-              <el-button
-                size="small"
-                circle
-                type="danger"
-                :icon="Delete"
-                @click="removeTask(row)"
-                :loading="actionLoading[row.id]"
-              />
-            </el-tooltip>
-          </div>
-        </template>
-      </el-table-column>
-    </el-table>
+                effect="plain"
+                round
+              >{{ d.algo_name }}</el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="taskStatusType(row.status)" effect="dark">
+              <div style="display:flex;align-items:center;gap:4px">
+                <span :class="['status-dot', row.status === 1 ? 'is-running' : '']"></span>
+                {{ taskStatusLabel(row.status) }}
+              </div>
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="alarm_count" label="告警" width="100" align="center">
+          <template #default="{ row }">
+            <el-link type="danger" :underline="false" @click="viewAlarms(row)" style="font-weight: bold">
+              {{ row.alarm_count }}
+            </el-link>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button-group>
+              <el-tooltip :content="row.status === 1 ? '停止' : '启动'" placement="top">
+                <el-button
+                  size="small"
+                  :type="row.status === 1 ? 'warning' : 'success'"
+                  :icon="row.status === 1 ? VideoPause : VideoPlay"
+                  @click="toggleTask(row)"
+                  :loading="actionLoading[row.id]"
+                />
+              </el-tooltip>
+              <el-tooltip content="编辑" placement="top">
+                <el-button
+                  size="small"
+                  :icon="Edit"
+                  @click="openEdit(row)"
+                  :loading="actionLoading[row.id]"
+                />
+              </el-tooltip>
+              <el-tooltip content="告警记录" placement="top">
+                <el-button
+                  size="small"
+                  type="primary"
+                  :icon="Warning"
+                  @click="viewAlarms(row)"
+                />
+              </el-tooltip>
+              <el-tooltip content="删除" placement="top">
+                <el-button
+                  size="small"
+                  type="danger"
+                  :icon="Delete"
+                  @click="removeTask(row)"
+                  :loading="actionLoading[row.id]"
+                />
+              </el-tooltip>
+            </el-button-group>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <!-- Create / Edit Task Dialog -->
-    <el-dialog v-model="formVisible" :title="editMode ? '编辑任务' : '新建任务'" width="680px" @closed="resetForm">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="任务名称" prop="task_name">
-          <el-input v-model="form.task_name" placeholder="如: 工位监测任务" />
-        </el-form-item>
-
-        <el-form-item label="摄像头" prop="camera_id">
-          <el-select v-model="form.camera_id" placeholder="请选择摄像头" style="width:100%">
-            <el-option
-              v-for="cam in cameras"
-              :key="cam.id"
-              :label="`${cam.name} (${cam.location || '无地点'})`"
-              :value="cam.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" :rows="2" />
-        </el-form-item>
-
-        <el-divider content-position="left">算法配置</el-divider>
-
-        <div v-for="algo in algorithms" :key="algo.id" style="margin-bottom:12px">
-          <el-checkbox
-            v-model="selectedAlgos[algo.id]"
-            :label="algo.algo_name"
-            @change="(v) => onAlgoToggle(algo, v)"
-            style="font-weight:600"
-          />
-          <el-tag size="small" type="info" style="margin-left:8px">{{ algo.algo_key }}</el-tag>
-
-          <div v-if="selectedAlgos[algo.id]" style="margin-top:8px;padding:12px 16px;background:#f5f7fa;border-radius:6px">
-            <el-row :gutter="12">
-              <!-- 按 param_definition 动态渲染算法参数字段 -->
-              <template v-for="param in getParamDef(algo)" :key="param.key">
-                <el-col :span="param.type === 'slider' ? 16 : 8">
-                  <el-form-item :label="param.label" :label-width="110">
-                    <el-input-number
-                      v-if="param.type === 'number'"
-                      v-model="algoParams[algo.id][param.key]"
-                      :min="param.min ?? undefined"
-                      :max="param.max ?? undefined"
-                      :step="param.step ?? 1"
-                      size="small" style="width:100%"
-                    />
-                    <div v-else-if="param.type === 'slider'" style="display:flex;align-items:center;gap:8px;width:100%">
-                      <el-slider
-                        v-model="algoParams[algo.id][param.key]"
-                        :min="param.min ?? 0"
-                        :max="param.max ?? 1"
-                        :step="param.step ?? 0.01"
-                        style="flex:1"
-                        size="small"
-                      />
-                      <span style="min-width:36px;text-align:right;font-size:13px;color:#606266">
-                        {{ algoParams[algo.id][param.key] }}
-                      </span>
+    <el-dialog 
+      v-model="formVisible" 
+      :title="editMode ? '编辑监控任务' : '新建监控任务'" 
+      width="720px" 
+      @closed="resetForm"
+      class="task-dialog"
+      destroy-on-close
+    >
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="90px" label-position="left">
+        <div class="dialog-section-title">基本信息</div>
+        <div class="form-section">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="任务名称" prop="task_name">
+                <el-input v-model="form.task_name" placeholder="如: 大厅人员监控" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="摄像头" prop="camera_id">
+                <el-select v-model="form.camera_id" placeholder="请选择视频源" style="width:100%">
+                  <el-option
+                    v-for="cam in cameras"
+                    :key="cam.id"
+                    :label="`${cam.name} (${cam.location || '无地点'})`"
+                    :value="cam.id"
+                  >
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <span>{{ cam.name }}</span>
+                      <span style="color:var(--text-secondary);font-size:12px">{{ cam.location }}</span>
                     </div>
-                    <el-select
-                      v-else-if="param.type === 'select'"
-                      v-model="algoParams[algo.id][param.key]"
-                      size="small" style="width:100%"
-                    >
-                      <el-option
-                        v-for="opt in param.options"
-                        :key="opt"
-                        :label="opt"
-                        :value="opt"
-                      />
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-              </template>
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="24">
+              <el-form-item label="备注说明">
+                <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="选填，任务相关备注信息" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </div>
 
-              <!-- 通用字段：冷却时间（对应 alarm_config.alarm_interval） -->
-              <el-col :span="8">
-                <el-form-item label="冷却时间(s)" :label-width="110">
-                  <el-input-number
-                    v-model="algoParams[algo.id].alarm_interval"
-                    :min="10" :max="3600" size="small" style="width:100%"
-                  />
-                </el-form-item>
-              </el-col>
+        <div class="dialog-section-title" style="margin-top: 24px;">算法配置</div>
+        <div class="algo-selection-area">
+          <div v-if="algorithms.length === 0" class="empty-algo">
+            暂无可用算法，请先在算法管理中添加
+          </div>
+          <div v-for="algo in algorithms" :key="algo.id" class="algo-config-card" :class="{ 'is-active': selectedAlgos[algo.id] }">
+            <div class="algo-config-header" @click="selectedAlgos[algo.id] = !selectedAlgos[algo.id]; onAlgoToggle(algo, selectedAlgos[algo.id])">
+              <el-checkbox
+                v-model="selectedAlgos[algo.id]"
+                @click.stop
+                @change="(v) => onAlgoToggle(algo, v)"
+              />
+              <div class="algo-info">
+                <span class="algo-name">{{ algo.algo_name }}</span>
+                <el-tag size="small" type="info" effect="plain">{{ algo.algo_key }}</el-tag>
+              </div>
+              <el-icon class="expand-icon" :class="{ 'is-expanded': selectedAlgos[algo.id] }"><ArrowDown /></el-icon>
+            </div>
 
-              <!-- 通用字段：检测区域（对应 roi_config） -->
-              <el-col :span="24">
-                <el-form-item label="检测区域" :label-width="110">
-                  <RoiDrawer
-                    v-model="algoParams[algo.id].roi"
-                    :camera-id="form.camera_id"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
+            <el-collapse-transition>
+              <div v-show="selectedAlgos[algo.id]">
+                <div class="algo-config-body">
+                  <el-row :gutter="24">
+                    <!-- 按 param_definition 动态渲染算法参数字段 -->
+                    <template v-for="param in getParamDef(algo)" :key="param.key">
+                      <el-col :span="param.type === 'slider' ? 24 : 8">
+                        <el-form-item :label="param.label" label-position="top" class="compact-form-item">
+                          <el-input-number
+                            v-if="param.type === 'number'"
+                            v-model="algoParams[algo.id][param.key]"
+                            :min="param.min ?? undefined"
+                            :max="param.max ?? undefined"
+                            :step="param.step ?? 1"
+                            controls-position="right"
+                            style="width: 100%; max-width: 160px;"
+                          />
+                          <div v-else-if="param.type === 'slider'" class="slider-container">
+                            <el-slider
+                              v-model="algoParams[algo.id][param.key]"
+                              :min="param.min ?? 0"
+                              :max="param.max ?? 1"
+                              :step="param.step ?? 0.01"
+                              show-input
+                              input-size="small"
+                            />
+                          </div>
+                          <el-select
+                            v-else-if="param.type === 'select'"
+                            v-model="algoParams[algo.id][param.key]"
+                            style="width: 100%; max-width: 160px;"
+                          >
+                            <el-option
+                              v-for="opt in param.options"
+                              :key="opt"
+                              :label="opt"
+                              :value="opt"
+                            />
+                          </el-select>
+                        </el-form-item>
+                      </el-col>
+                    </template>
+
+                    <!-- 通用字段：冷却时间 -->
+                    <el-col :span="8">
+                      <el-form-item label="冷却时间(秒)" label-position="top" class="compact-form-item">
+                        <el-tooltip content="触发告警后，多少秒内不再重复告警" placement="top">
+                          <el-input-number
+                            v-model="algoParams[algo.id].alarm_interval"
+                            :min="10" :max="3600" 
+                            controls-position="right"
+                            style="width: 100%; max-width: 160px;"
+                          />
+                        </el-tooltip>
+                      </el-form-item>
+                    </el-col>
+
+                    <!-- 通用字段：检测区域 -->
+                    <el-col :span="24">
+                      <el-form-item label="检测区域 (ROI)" label-position="top" class="compact-form-item" style="margin-bottom: 0;">
+                        <div class="roi-wrapper">
+                          <RoiDrawer
+                            v-model="algoParams[algo.id].roi"
+                            :camera-id="form.camera_id"
+                          />
+                        </div>
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                </div>
+              </div>
+            </el-collapse-transition>
           </div>
         </div>
       </el-form>
       <template #footer>
-        <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="formLoading">{{ editMode ? '保存' : '创建' }}</el-button>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <span style="font-size:13px;color:var(--text-secondary)">
+            <el-icon style="vertical-align:middle;margin-right:4px"><InfoFilled /></el-icon>
+            配置完成后将自动下发至 AI 推理服务
+          </span>
+          <div>
+            <el-button @click="formVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitForm" :loading="formLoading">
+              {{ editMode ? '保存修改' : '确认创建' }}
+            </el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -192,7 +263,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning, Edit } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, VideoPlay, VideoPause, Warning, Edit, InfoFilled, ArrowDown } from '@element-plus/icons-vue'
 import { taskApi } from '@/api/task'
 import { cameraApi } from '@/api/camera'
 import RoiDrawer from '@/components/RoiDrawer.vue'
@@ -435,3 +506,169 @@ onMounted(() => {
   fetchCameras()
 })
 </script>
+
+<style scoped>
+.toolbar-card :deep(.el-card__body) {
+  padding: 12px 20px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #909399;
+  margin-right: 4px;
+}
+
+.status-dot.is-running {
+  background-color: #fff;
+  box-shadow: 0 0 4px #fff;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+:deep(.el-table) {
+  --el-table-header-bg-color: #f8f9fb;
+}
+
+:deep(.el-table__header) {
+  font-weight: 600;
+  color: #606266;
+}
+
+/* ── Task Dialog Styles ── */
+.task-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px;
+  background-color: #f8fafc;
+}
+
+.dialog-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.dialog-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  background-color: var(--primary-color);
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.form-section {
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.algo-selection-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-algo {
+  text-align: center;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.algo-config-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.algo-config-card:hover {
+  border-color: #cbd5e1;
+}
+
+.algo-config-card.is-active {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.algo-config-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: #ffffff;
+  user-select: none;
+}
+
+.algo-config-card.is-active .algo-config-header {
+  background: #f0f7ff;
+  border-bottom: 1px solid #e1effe;
+}
+
+.algo-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+}
+
+.algo-name {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.expand-icon {
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.algo-config-body {
+  padding: 20px;
+  background: #ffffff;
+}
+
+.compact-form-item {
+  margin-bottom: 16px;
+}
+
+.compact-form-item :deep(.el-form-item__label) {
+  padding-bottom: 4px;
+  line-height: 1.2;
+  font-size: 13px;
+  color: var(--text-regular);
+}
+
+.slider-container {
+  width: 100%;
+  padding: 0 8px;
+}
+
+.roi-wrapper {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+</style>
