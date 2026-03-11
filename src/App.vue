@@ -26,7 +26,7 @@
         </el-menu-item>
         <el-menu-item index="/tasks">
           <el-icon><SetUp /></el-icon>
-          <span>任务调度</span>
+          <span>任务管理</span>
         </el-menu-item>
         <el-menu-item index="/alarms">
           <el-icon><Warning /></el-icon>
