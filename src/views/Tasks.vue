@@ -1,17 +1,9 @@
 <template>
-  <div class="tasks-container">
-    <!-- Toolbar -->
-    <el-card class="toolbar-card" style="margin-bottom: 20px;">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;gap:12px">
-          <el-button type="primary" :icon="Plus" @click="openCreate">新建监控任务</el-button>
-          <el-button :icon="Refresh" @click="fetchTasks" :loading="tableLoading">刷新</el-button>
-        </div>
-        <div style="color: #909399; font-size: 14px;">
-          共 {{ tasks.length }} 个任务
-        </div>
-      </div>
-    </el-card>
+  <div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+      <el-button type="primary" :icon="Plus" @click="openCreate">新建任务</el-button>
+      <el-button :icon="Refresh" circle @click="fetchTasks" :loading="tableLoading" />
+    </div>
 
     <!-- Table -->
     <el-card shadow="never" style="padding: 0;">
