@@ -5,6 +5,7 @@ import Tasks from '@/views/Tasks.vue'
 import Alarms from '@/views/Alarms.vue'
 import AlgoManage from '@/views/AlgoManage.vue'
 import VoiceAlarm from '@/views/VoiceAlarm.vue'
+import AlarmUpload from '@/views/AlarmUpload.vue'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -14,6 +15,7 @@ const routes = [
   { path: '/alarms', component: Alarms, meta: { title: '事件告警' } },
   { path: '/algo-manage', component: AlgoManage, meta: { title: '算法管理' } },
   { path: '/voice-alarm', component: VoiceAlarm, meta: { title: '语音报警' } },
+  { path: '/alarm-upload', component: AlarmUpload, meta: { title: '报警上传' } },
 ]
 
 const router = createRouter({

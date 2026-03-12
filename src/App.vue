@@ -41,6 +41,10 @@
           <el-icon><Bell /></el-icon>
           <span>语音报警</span>
         </el-menu-item>
+        <el-menu-item index="/alarm-upload">
+          <el-icon><Upload /></el-icon>
+          <span>报警上传</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
