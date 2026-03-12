@@ -37,6 +37,10 @@
           <el-icon><Grid /></el-icon>
           <span>算法模型</span>
         </el-menu-item>
+        <el-menu-item index="/voice-alarm">
+          <el-icon><Bell /></el-icon>
+          <span>语音报警</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -71,7 +75,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid } from '@element-plus/icons-vue'
+import { Monitor, Grid, Bell } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
