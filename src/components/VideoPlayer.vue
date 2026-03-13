@@ -68,8 +68,13 @@ function init() {
   player.attachMediaElement(videoEl.value)
   player.load()
 
-  player.on(mpegts.Events.ERROR, (_, errorDetail) => {
-    error.value = `播放错误: ${errorDetail}`
+  player.on(mpegts.Events.ERROR, (_, errorDetail, errorInfo) => {
+    const isH265Unsupported = errorInfo?.msg?.includes('hvc1') || errorInfo?.msg?.includes('hevc')
+    if (isH265Unsupported) {
+      error.value = '摄像头使用 H.265 编码，浏览器不支持播放，请在摄像头设置中将视频编码改为 H.264'
+    } else {
+      error.value = `播放错误: ${errorDetail}`
+    }
     loading.value = false
   })
 
