@@ -36,12 +36,23 @@
         </div>
       </template>
       <el-form :model="settings" ref="formRef" label-width="90px" style="max-width: 580px">
-        <el-form-item label="设备 ID" prop="device_id">
-          <el-input
-            v-model="settings.device_id"
-            placeholder="如：sn123456（上传时作为 DeviceID 字段）"
-            clearable
-          />
+        <el-form-item label="设备 ID">
+          <div style="display:flex;align-items:center;gap:8px;width:100%">
+            <el-input
+              :value="settings.device_id || '（未生成，请检查硬件）'"
+              readonly
+              style="font-family:monospace;flex:1"
+            />
+            <el-button
+              :icon="CopyDocument"
+              @click="copyDeviceId"
+              :disabled="!settings.device_id"
+              title="复制设备 ID"
+            >复制</el-button>
+          </div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;line-height:1.5">
+            由硬件 eMMC 唯一编号自动生成，不可手动修改
+          </div>
         </el-form-item>
         <el-form-item
           label="上传地址"
@@ -74,7 +85,7 @@
           </template>
           <el-code-block language="json" style="font-size:12px">
             <pre class="code-preview">{
-  "DeviceID":        "sn123456",      // 设备ID（页面配置）
+  "DeviceID":        "9f3a7c8b...",   // 设备ID（由硬件自动生成）
   "TaskCode":        "任务名称",
   "CameraNo":        "摄像头名称",
   "ResultID":        "123",           // 报警记录ID
@@ -219,7 +230,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Upload, Link, DataAnalysis, List, Check,
-  Refresh, RefreshRight, CircleCheck, InfoFilled,
+  Refresh, RefreshRight, CircleCheck, InfoFilled, CopyDocument,
 } from '@element-plus/icons-vue'
 import { alarmUploadApi } from '@/api/alarmUpload'
 
@@ -239,6 +250,31 @@ async function fetchSettings() {
   }
 }
 
+function copyDeviceId() {
+  if (!settings.device_id) return
+  // 优先用 Clipboard API（HTTPS/localhost），降级到 execCommand（局域网 HTTP 也支持）
+  const doCopy = () => {
+    const el = document.createElement('textarea')
+    el.value = settings.device_id
+    el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+    document.body.appendChild(el)
+    el.focus()
+    el.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(el)
+    return ok
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(settings.device_id)
+      .then(() => ElMessage.success('设备 ID 已复制'))
+      .catch(() => {
+        doCopy() ? ElMessage.success('设备 ID 已复制') : ElMessage.error('复制失败，请手动选中')
+      })
+  } else {
+    doCopy() ? ElMessage.success('设备 ID 已复制') : ElMessage.error('复制失败，请手动选中')
+  }
+}
+
 async function saveSettings() {
   settingsLoading.value = true
   lastSaved.value = false
@@ -246,7 +282,6 @@ async function saveSettings() {
     await alarmUploadApi.saveSettings({
       enabled: settings.enabled,
       upload_url: settings.upload_url,
-      device_id: settings.device_id,
     })
     ElMessage.success('配置已保存')
     lastSaved.value = true
