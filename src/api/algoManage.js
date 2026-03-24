@@ -28,6 +28,10 @@ export const algoManageApi = {
       return res.data
     })
   },
+  downloadPlugin: (filename) =>
+    axios.get('/api' + `${BASE}/plugins/${encodeURIComponent(filename)}/download`, {
+      responseType: 'blob',
+    }),
   deletePlugin: (filename) => request.delete(`${BASE}/plugins/${filename}`),
 
   // ─── Model File Upload ─────────────────────────────────

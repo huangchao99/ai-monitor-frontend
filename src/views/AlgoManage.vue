@@ -161,18 +161,22 @@
               <span style="color: var(--text-secondary); font-size: 13px;">{{ formatTime(row.modified_at) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right">
+          <el-table-column label="操作" width="140" align="center" fixed="right">
             <template #default="{ row }">
-              <el-tooltip content="删除插件" placement="top">
-                <el-button
-                  size="small"
-                  type="danger"
-                  :icon="Delete"
-                  :disabled="row.protected"
-                  @click="removePlugin(row)"
-                  circle
-                />
-              </el-tooltip>
+              <el-button-group>
+                <el-tooltip content="下载插件" placement="top">
+                  <el-button size="small" :icon="Download" @click="downloadPlugin(row)" />
+                </el-tooltip>
+                <el-tooltip content="删除插件" placement="top">
+                  <el-button
+                    size="small"
+                    type="danger"
+                    :icon="Delete"
+                    :disabled="row.protected"
+                    @click="removePlugin(row)"
+                  />
+                </el-tooltip>
+              </el-button-group>
             </template>
           </el-table-column>
         </el-table>
@@ -401,7 +405,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Delete, Edit, Upload, CircleCheck, Document } from '@element-plus/icons-vue'
+import { Plus, Refresh, Delete, Edit, Upload, CircleCheck, Document, Download } from '@element-plus/icons-vue'
 import { algoManageApi } from '@/api/algoManage'
 
 const activeTab = ref('models')
@@ -710,6 +714,40 @@ async function removePlugin(row) {
   } catch (e) {
     ElMessage.error(e.message)
   }
+}
+
+async function downloadPlugin(row) {
+  try {
+    const res = await algoManageApi.downloadPlugin(row.filename)
+    const contentDisposition = res.headers?.['content-disposition'] || ''
+    const matchedName = contentDisposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i)
+    const downloadName = matchedName ? decodeURIComponent(matchedName[1].replace(/"/g, '')) : row.filename
+    const blobUrl = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = downloadName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(blobUrl)
+  } catch (e) {
+    const message = await parseDownloadError(e)
+    ElMessage.error(message)
+  }
+}
+
+async function parseDownloadError(error) {
+  const blob = error?.response?.data
+  if (blob instanceof Blob && blob.type.includes('application/json')) {
+    try {
+      const text = await blob.text()
+      const data = JSON.parse(text)
+      return data?.message || error.message || '下载失败'
+    } catch {
+      return error.message || '下载失败'
+    }
+  }
+  return error?.message || '下载失败'
 }
 
 function formatSize(bytes) {
