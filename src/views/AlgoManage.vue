@@ -74,6 +74,14 @@
               <el-tag type="info" effect="light">{{ row.algo_key }}</el-tag>
             </template>
           </el-table-column>
+          <el-table-column prop="upload_recog_type" label="上传标识" width="130" align="center">
+            <template #default="{ row }">
+              <el-tag v-if="row.upload_recog_type" type="warning" effect="light">
+                {{ row.upload_recog_type }}
+              </el-tag>
+              <span v-else style="color: var(--text-secondary); font-size: 13px;">未配置</span>
+            </template>
+          </el-table-column>
           <el-table-column label="关联模型" min-width="200">
             <template #default="{ row }">
               <div style="display: flex; flex-wrap: wrap; gap: 4px">
@@ -313,6 +321,14 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="上传标识" prop="upload_recog_type">
+              <el-input
+                v-model="algoForm.upload_recog_type"
+                placeholder="如: rylg、by、play_phone（报警上传用 RecogType 标识）"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="关联模型">
               <el-select
                 v-model="algoForm.model_ids"
@@ -544,11 +560,13 @@ const algoForm = reactive({
   algo_name: '',
   algo_key: '',
   category: '',
+  upload_recog_type: '',
   model_ids: [],
 })
 const algoRules = {
   algo_name: [{ required: true, message: '请输入算法名称' }],
   algo_key: [{ required: true, message: '请输入插件 Key' }],
+  upload_recog_type: [{ required: true, message: '请输入上传标识' }],
 }
 const paramRows = ref([])
 
@@ -614,6 +632,7 @@ function openAlgoDialog(row = null) {
       algo_name: row.algo_name,
       algo_key: row.algo_key,
       category: row.category || '',
+      upload_recog_type: row.upload_recog_type || '',
       model_ids: (row.models || []).map(m => m.id),
     })
     paramRows.value = parseParamRows(row.param_definition)
@@ -626,6 +645,7 @@ function resetAlgoForm() {
   algoForm.algo_name = ''
   algoForm.algo_key = ''
   algoForm.category = ''
+  algoForm.upload_recog_type = ''
   algoForm.model_ids = []
   paramRows.value = []
   algoFormRef.value?.resetFields()
@@ -638,6 +658,7 @@ async function submitAlgo() {
     algo_name: algoForm.algo_name,
     algo_key: algoForm.algo_key,
     category: algoForm.category,
+    upload_recog_type: algoForm.upload_recog_type.trim(),
     param_definition: paramDef.length > 0 ? JSON.stringify(paramDef) : '',
     model_ids: algoForm.model_ids,
   }
