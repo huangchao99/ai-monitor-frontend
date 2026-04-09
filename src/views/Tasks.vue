@@ -215,6 +215,22 @@
                       </el-form-item>
                     </el-col>
 
+                    <el-col :span="8">
+                      <el-form-item label="报警条件" label-position="top" class="compact-form-item">
+                        <el-select
+                          v-model="algoParams[algo.id].nav_condition"
+                          style="width: 100%; max-width: 160px;"
+                        >
+                          <el-option
+                            v-for="opt in NAV_CONDITION_OPTIONS"
+                            :key="opt.value"
+                            :label="opt.label"
+                            :value="opt.value"
+                          />
+                        </el-select>
+                      </el-form-item>
+                    </el-col>
+
                     <!-- 通用字段：检测区域 -->
                     <el-col :span="24">
                       <el-form-item label="检测区域 (ROI)" label-position="top" class="compact-form-item" style="margin-bottom: 0;">
@@ -273,6 +289,11 @@ const formRef = ref(null)
 const editMode = ref(false)
 const editTaskId = ref(null)
 const form = reactive({ task_name: '', camera_id: null, remark: '' })
+const NAV_CONDITION_OPTIONS = [
+  { label: '全告警', value: 'all' },
+  { label: '航行中', value: 'underway' },
+  { label: '停泊时', value: 'moored' },
+]
 const rules = {
   task_name: [{ required: true, message: '请输入任务名称' }],
   camera_id: [{ required: true, message: '请选择摄像头' }],
@@ -292,7 +313,7 @@ function getParamDef(algo) {
 }
 
 function initAlgoParam(algo) {
-  const defaults = { alarm_interval: 60, roi: '' }
+  const defaults = { alarm_interval: 60, roi: '', nav_condition: 'all' }
   getParamDef(algo).forEach(p => {
     defaults[p.key] = p.default !== undefined ? p.default : (p.type === 'number' ? 0 : '')
   })
@@ -425,6 +446,7 @@ async function openEdit(row) {
     })
     // 回填冷却时间和 ROI
     if (ac.alarm_interval !== undefined) algoParams[algo.id].alarm_interval = ac.alarm_interval
+    if (ac.nav_condition) algoParams[algo.id].nav_condition = ac.nav_condition
     algoParams[algo.id].roi = detail.roi_config === '[]' ? '' : (detail.roi_config || '')
   }
 
@@ -465,7 +487,10 @@ async function submitForm() {
       algo_id: a.id,
       roi_config: roiCfg,
       algo_params: JSON.stringify(algoParamsObj),
-      alarm_config: JSON.stringify({ alarm_interval: p.alarm_interval }),
+      alarm_config: JSON.stringify({
+        alarm_interval: p.alarm_interval,
+        nav_condition: p.nav_condition || 'all',
+      }),
     }
   })
 
