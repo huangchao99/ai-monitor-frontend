@@ -160,6 +160,7 @@ import {
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { taskApi } from '@/api/task'
 import { alarmApi } from '@/api/alarm'
+import { buildCameraLiveUrl } from '@/utils/stream'
 
 // ── Video grid state ──
 const layout = ref(4)
@@ -182,7 +183,7 @@ function getFlvUrl(slotIndex) {
   if (!taskId) return ''
   const task = getTaskById(taskId)
   if (!task?.camera_id) return ''
-  return `http://${window.location.hostname}/live/cam${task.camera_id}.live.flv`
+  return buildCameraLiveUrl(task.camera_id)
 }
 
 async function fetchTasks() {

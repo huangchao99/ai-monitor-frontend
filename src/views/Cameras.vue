@@ -123,6 +123,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Edit, Delete, VideoPlay, VideoPause, VideoCamera, Location, Link } from '@element-plus/icons-vue'
 import { cameraApi } from '@/api/camera'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import { resolveLivePlaybackUrl } from '@/utils/stream'
 // ... 脚本部分逻辑保持不变 ...
 
 // ... 脚本部分逻辑保持不变 ...
@@ -192,13 +193,7 @@ async function toggleStream(row) {
 }
 
 function resolveFlvUrl(flv) {
-  try {
-    const u = new URL(flv)
-    u.hostname = window.location.hostname
-    return u.toString()
-  } catch {
-    return flv
-  }
+  return resolveLivePlaybackUrl(flv)
 }
 
 function previewCamera(row) {
