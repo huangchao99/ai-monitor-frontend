@@ -57,6 +57,10 @@
             <el-icon><InfoFilled /></el-icon>
             <span>系统信息</span>
           </el-menu-item>
+          <el-menu-item index="/system-network">
+            <el-icon><Connection /></el-icon>
+            <span>网络配置</span>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -92,7 +96,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled } from '@element-plus/icons-vue'
+import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()

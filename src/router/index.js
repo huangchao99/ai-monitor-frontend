@@ -8,6 +8,7 @@ import VoiceAlarm from '@/views/VoiceAlarm.vue'
 import AlarmUpload from '@/views/AlarmUpload.vue'
 import Position from '@/views/Position.vue'
 import SystemInfo from '@/views/SystemInfo.vue'
+import NetworkConfig from '@/views/NetworkConfig.vue'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
@@ -20,6 +21,7 @@ const routes = [
   { path: '/voice-alarm', component: VoiceAlarm, meta: { title: '语音报警' } },
   { path: '/alarm-upload', component: AlarmUpload, meta: { title: '报警上传' } },
   { path: '/system-info', component: SystemInfo, meta: { title: '系统信息' } },
+  { path: '/system-network', component: NetworkConfig, meta: { title: '网络配置' } },
 ]
 
 const router = createRouter({
