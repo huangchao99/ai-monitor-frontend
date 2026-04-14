@@ -4,10 +4,11 @@
     <el-aside width="240px" class="modern-sidebar">
       <div class="logo">
         <img class="logo-image" src="/hifleet-logo.png" alt="HiFleet 智能监控平台 logo" />
-        <span>HiFleet AI</span>
+        <span>HiFleet 智能监控平台</span>
       </div>
       <el-menu
         :default-active="activeMenu"
+        :default-openeds="defaultOpeneds"
         class="modern-menu"
         background-color="transparent"
         text-color="#94a3b8"
@@ -47,6 +48,16 @@
           <el-icon><Upload /></el-icon>
           <span>报警上传</span>
         </el-menu-item>
+        <el-sub-menu index="system-manage">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/system-info">
+            <el-icon><InfoFilled /></el-icon>
+            <span>系统信息</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -81,7 +92,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid, Bell, LocationInformation } from '@element-plus/icons-vue'
+import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
@@ -89,7 +100,8 @@ const healthStatus = ref({ zlm: false, python: false })
 const unhandledCount = ref(0)
 
 const activeMenu = computed(() => route.path)
-const currentTitle = computed(() => route.meta?.title || 'AI 智能监控')
+const defaultOpeneds = computed(() => (route.path.startsWith('/system-') ? ['system-manage'] : []))
+const currentTitle = computed(() => route.meta?.title || 'HiFleet 智能监控平台')
 
 async function checkHealth() {
   try {
@@ -147,10 +159,13 @@ onUnmounted(() => clearInterval(timer))
 }
 
 .logo span {
-  font-size: 18px;
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
+  line-height: 1.25;
 }
 
 /* 菜单样式优化 */
@@ -159,7 +174,8 @@ onUnmounted(() => clearInterval(timer))
   padding: 12px 8px;
 }
 
-.modern-menu .el-menu-item {
+.modern-menu .el-menu-item,
+.modern-menu .el-sub-menu__title {
   height: 48px !important;
   line-height: 48px !important;
   margin-bottom: 8px !important;
@@ -168,7 +184,8 @@ onUnmounted(() => clearInterval(timer))
   transition: all 0.2s ease;
 }
 
-.modern-menu .el-menu-item:hover {
+.modern-menu .el-menu-item:hover,
+.modern-menu .el-sub-menu__title:hover {
   background-color: #1e293b !important; /* Tailwind slate-800 */
   color: #f8fafc !important;
 }
@@ -177,6 +194,15 @@ onUnmounted(() => clearInterval(timer))
   background-color: #3b82f6 !important;
   color: #ffffff !important;
   box-shadow: 0 4px 6px rgba(59, 130, 246, 0.25);
+}
+
+.modern-menu .el-sub-menu .el-menu {
+  background-color: transparent !important;
+}
+
+.modern-menu .el-sub-menu .el-menu-item {
+  padding-left: 48px !important;
+  min-width: auto !important;
 }
 
 .alarm-badge {
