@@ -4,7 +4,7 @@
     <el-aside width="240px" class="modern-sidebar">
       <div class="logo">
         <img class="logo-image" src="/hifleet-logo.png" alt="HiFleet 智能监控平台 logo" />
-        <span>HiFleet 智能监控平台</span>
+        <span>HiFleet AI</span>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -61,6 +61,10 @@
             <el-icon><Connection /></el-icon>
             <span>网络配置</span>
           </el-menu-item>
+          <el-menu-item index="/system-logs">
+            <el-icon><Document /></el-icon>
+            <span>日志查看</span>
+          </el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -96,7 +100,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection } from '@element-plus/icons-vue'
+import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection, Document } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
