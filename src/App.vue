@@ -3,9 +3,7 @@
     <!-- Sidebar -->
     <el-aside width="240px" class="modern-sidebar">
       <div class="logo">
-        <div class="logo-icon">
-          <el-icon size="20" color="#ffffff"><VideoCamera /></el-icon>
-        </div>
+        <img class="logo-image" src="/hifleet-logo.png" alt="HiFleet 智能监控平台 logo" />
         <span>HiFleet AI</span>
       </div>
       <el-menu
@@ -139,15 +137,13 @@ onUnmounted(() => clearInterval(timer))
   background: #0b1120;
 }
 
-.logo-icon {
+.logo-image {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  object-fit: contain;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 
 .logo span {
