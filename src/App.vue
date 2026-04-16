@@ -36,6 +36,10 @@
           <el-icon><Grid /></el-icon>
           <span>算法模型</span>
         </el-menu-item>
+        <el-menu-item index="/model-test">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>模型测试</span>
+        </el-menu-item>
         <el-menu-item index="/position">
           <el-icon><LocationInformation /></el-icon>
           <span>定位管理</span>
@@ -100,7 +104,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection, Document } from '@element-plus/icons-vue'
+import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection, Document, DataAnalysis } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()

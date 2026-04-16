@@ -87,6 +87,44 @@ function init() {
   })
 }
 
+function getDisplayMetrics() {
+  const el = videoEl.value
+  if (!el) return null
+
+  const clientWidth = el.clientWidth || 0
+  const clientHeight = el.clientHeight || 0
+  const videoWidth = el.videoWidth || 0
+  const videoHeight = el.videoHeight || 0
+
+  if (!clientWidth || !clientHeight || !videoWidth || !videoHeight) {
+    return {
+      clientWidth,
+      clientHeight,
+      videoWidth,
+      videoHeight,
+      drawWidth: 0,
+      drawHeight: 0,
+      offsetX: 0,
+      offsetY: 0,
+    }
+  }
+
+  const scale = Math.min(clientWidth / videoWidth, clientHeight / videoHeight)
+  const drawWidth = videoWidth * scale
+  const drawHeight = videoHeight * scale
+
+  return {
+    clientWidth,
+    clientHeight,
+    videoWidth,
+    videoHeight,
+    drawWidth,
+    drawHeight,
+    offsetX: (clientWidth - drawWidth) / 2,
+    offsetY: (clientHeight - drawHeight) / 2,
+  }
+}
+
 watch(() => props.url, (v) => {
   if (v) init()
   else destroy()
@@ -94,6 +132,10 @@ watch(() => props.url, (v) => {
 
 onMounted(() => { if (props.url) init() })
 onUnmounted(destroy)
+
+defineExpose({
+  getDisplayMetrics,
+})
 </script>
 
 <style scoped>
