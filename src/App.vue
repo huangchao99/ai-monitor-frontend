@@ -2,9 +2,14 @@
   <el-container style="height: 100vh">
     <!-- Sidebar -->
     <el-aside width="240px" class="modern-sidebar">
-      <div class="logo">
-        <img class="logo-image" src="/hifleet-logo.png" alt="HiFleet 智能监控平台 logo" />
-        <span>HiFleet AI</span>
+      <div class="brand-header">
+        <div class="brand-main">
+          <img class="logo-image" src="/hifleet-logo.png" alt="HiFleet 智能监控平台 logo" />
+          <div class="brand-copy">
+            <span class="brand-title">HiFleet AI</span>
+            <span class="brand-subtitle">智能监控平台</span>
+          </div>
+        </div>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -104,7 +109,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Monitor, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection, Document, DataAnalysis } from '@element-plus/icons-vue'
+import { Monitor, VideoCamera, SetUp, Warning, Grid, Bell, LocationInformation, Setting, InfoFilled, Connection, Document, DataAnalysis, Upload } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const route = useRoute()
@@ -152,13 +157,22 @@ onUnmounted(() => clearInterval(timer))
   flex-direction: column;
 }
 
-.logo {
-  height: 72px;
+.brand-header {
+  padding: 16px 20px 14px 24px;
+  background: #0b1120;
+}
+
+.brand-main {
   display: flex;
   align-items: center;
-  padding: 0 24px;
   gap: 12px;
-  background: #0b1120;
+}
+
+.brand-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .logo-image {
@@ -170,14 +184,18 @@ onUnmounted(() => clearInterval(timer))
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
 
-.logo span {
-  flex: 1;
-  min-width: 0;
+.brand-title {
   font-size: 15px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
   line-height: 1.25;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
 }
 
 /* 菜单样式优化 */
